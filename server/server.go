@@ -26,9 +26,9 @@ func main() {
 			log.Println(err)
 			continue
 		}
-		defer conn.Close()
 		go ConnHandler(conn) //연결을 parameter로 넘겨주고 ConnHandler go routine 실행
 	}
+
 }
 
 func ConnHandler(conn net.Conn) {
@@ -45,16 +45,16 @@ func ConnHandler(conn net.Conn) {
 		}
 
 		if 0 < n { // 받아온 길이만큼 슬라이스를 잘라서 출력
-			data := recvCommand[:n]
-			var excommand string
-			for _, d := range data {
-				if string(d) == " " {
-					log.Println("space")
-				}
-				excommand = excommand + string(d)
-				log.Printf("execute command making: %s", excommand)
-			}
-			log.Printf("execute command : %s", excommand)
+			excommand := recvCommand[:n]
+			// var excommand string
+			// for _, d := range data {
+			// 	if string(d) == " " {
+			// 		log.Println("space")
+			// 	}
+			// 	excommand = excommand + string(d)
+			// 	log.Printf("execute command making: %s", excommand)
+			// }
+			// log.Printf("execute command : %s", excommand)
 
 			result := execute(string(excommand))
 
@@ -69,12 +69,15 @@ func ConnHandler(conn net.Conn) {
 func execute(command string) []byte {
 	cmd := exec.Command("/bin/bash", "-c", command)
 
-	log.Printf("cmd : %v\n", cmd)
+	log.Printf("Execute Command : %v\n", cmd)
 
 	cmdres, err := cmd.Output()
 	if err != nil {
 		log.Println(err)
 		return []byte("error : " + err.Error())
+	}
+	if string(cmdres) == "" {
+		return ([]byte("No output data"))
 	}
 
 	log.Printf("stdout: %v bytes\n\n %s", len(cmdres), string(cmdres))
