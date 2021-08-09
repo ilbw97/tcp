@@ -66,7 +66,7 @@ func check_os() {
 
 func execute() {
 	// cmd := exec.Command("/bin/bash", "-c", `df -lh`)
-	cmd := exec.Command("/bin/bash", "-c", `cat command.go`)
+	cmd := exec.Command("sh", "-c", `cat command.go`)
 	//Create get command output pipeline
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
