@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"io"
 	"log"
 	"math"
 	"net"
 	"os"
+	"strconv"
 )
 
 var ErrorNocommand = errors.New("no command")
@@ -17,24 +19,25 @@ var ErrorNotEnded = errors.New("")
 // var ErrorNoData = errors.New("no return data")
 
 func read(c net.Conn) error {
-	data := make([]byte, math.MaxInt32)
 	// data := make([]byte, 4096)
 	for {
+		data := make([]byte, math.MaxInt32)
 		n, err := c.Read(data) //server로부터 data 읽어오면
 		// n, err := ioutil.ReadAll(c)
 		if err != nil {
+			if io.EOF == err {
+				log.Println("연결 종료")
+			}
 			return err
 		} else {
-			for {
-				if bytes.Contains(data, []byte("EOF")) {
-					log.Println("find EOF!")
-					log.Printf("\n%v", string(data[:n])) //값 출력
-					return nil
-				} else {
-					log.Printf("\n%v", string(data[:n])) //값 출력
-
-				}
-			}
+			// if bytes.Contains(data, []byte("EOF")) {
+			// log.Println("find EOF!")
+			// res := bytes.Trim(data, "EOF")
+			// log.Printf("\n%v", string(res[:n])) //값 출력
+			log.Printf("\n%v", string(bytes.Trim(data[:n], "EOF")))
+			// log.Printf("")
+			return nil
+			// }
 
 		}
 	}
@@ -49,13 +52,13 @@ func sending(c net.Conn) error {
 		return sc.Err()
 	} else {
 		com = sc.Text() //읽어온 데이터를 변수에 저장
+
 		if com == "" {
 			log.Println("insert command!")
 			return ErrorNocommand
 		} else {
-			// comlen := len(com)
-			_, err := c.Write([]byte(com)) //server로 전송
-
+			comlen := strconv.Itoa(len(com))
+			_, err := c.Write([]byte(comlen + "\n" + com)) //server로 전송
 			if err != nil {
 				return err
 			}
