@@ -16,8 +16,6 @@ var ErrorNocommand = errors.New("no command")
 
 var ErrorNotEnded = errors.New("")
 
-// var ErrorNoData = errors.New("no return data")
-
 func read(c net.Conn) error {
 	// data := make([]byte, 4096)
 	for {
@@ -34,13 +32,24 @@ func read(c net.Conn) error {
 			// log.Println("find EOF!")
 			// res := bytes.Trim(data, "EOF")
 			// log.Printf("\n%v", string(res[:n])) //값 출력
-			log.Printf("\n%v", string(bytes.Trim(data[:n], "EOF")))
+			// log.Printf("\n%v", string(bytes.Trim(data[:n], "EOF")))
+			// for {
+			if bytes.Contains(data, []byte("EOF")) {
+				// if data[:3] == []byte("EOF"){
+				// if bytes.Equal(data[3:], []byte("EOF")) {
+				log.Println("find EOF!")
+				log.Printf("\n%v", string(bytes.Trim(data[:n], "EOF")))
+				break
+			} else {
+				log.Printf("\n%v", string(data[:n])) //값 출력
+			}
 			// log.Printf("")
-			return nil
-			// }
 
 		}
+
 	}
+	return nil
+	// }
 }
 func sending(c net.Conn) error {
 	var com string                   //command

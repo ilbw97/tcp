@@ -33,10 +33,12 @@ func main() {
 }
 
 func ConnHandler(conn net.Conn) {
+
+	recvData := make([]byte, math.MaxInt32) //값을 읽어와 저장할 버퍼 생성
 	log.Printf("serving %s\n", conn.RemoteAddr().String())
-	recvData := make([]byte, math.MaxInt32) //값을 읽어와 저장할 버퍼 생성s
 	defer conn.Close()
 	for {
+
 		n, err := conn.Read(recvData) //client가 값을 줄 때까지 blocking 되어 대기하다가 값을 주면 읽어들인다.
 		log.Printf("n : %d\n", n)
 
@@ -47,25 +49,16 @@ func ConnHandler(conn net.Conn) {
 			}
 			log.Printf("Failed to receive data : %v\n", err)
 		}
-		// if bytes.Contains(recvData, []byte("\n")) {
-		recvSize := recvData[:bytes.Index(recvData, []byte("\n"))]
+		// recvSize := recvData[:bytes.Index(recvData, []byte("\n"))]
+		// size, err := strconv.Atoi(string(recvSize))
+		// if err != nil {
+		// 	return
+		// }
+		// log.Printf("recieve command size : %d\n", size)
 
-		// excommand := recvData[bytes.Index(recvData, []byte("\n")):n]
-
-		size, err := strconv.Atoi(string(recvSize))
-		if err != nil {
-			return
-		}
-		log.Printf("recieve command size : %d\n", size)
-		// recvCommand := make([]byte, size+1)
-
-		r, err := conn.Read(recvData[:size])
-		if err != nil {
-			return
-		}
-		log.Printf("r : %d\n", r)
-		excommand := recvData[:r]
-		if r > 0 {
+		if n > 0 {
+			// excommand := recvData[size:n]
+			excommand := recvData[bytes.Index(recvData, []byte("\n")):n]
 			result := execute(string(excommand))
 			result = append(result, "EOF"...)
 			_, err := conn.Write(result)
@@ -74,13 +67,6 @@ func ConnHandler(conn net.Conn) {
 				return
 			}
 		}
-
-		// // recvCommand := make([]byte, size)
-		// if n > 0 { // 받아온 길이만큼 슬라이스를 잘라서 출력
-		// 	// excommand := recvCommand[:n]
-
-		// }
-		// }
 	}
 }
 func execute(command string) []byte {
