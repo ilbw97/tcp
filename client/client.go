@@ -4,40 +4,46 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"io"
 	"log"
 	"math"
 	"net"
 	"os"
+	"strconv"
 )
 
 var ErrorNocommand = errors.New("no command")
 
 var ErrorNotEnded = errors.New("")
 
-// var ErrorNoData = errors.New("no return data")
-
 func read(c net.Conn) error {
-	data := make([]byte, math.MaxInt32)
-	// data := make([]byte, 4096)
+	// resultall := make([]byte, 0)
+	var resultall []byte
+	resultlen := 0
 	for {
+		data := make([]byte, math.MaxInt32)
 		n, err := c.Read(data) //server로부터 data 읽어오면
-		// n, err := ioutil.ReadAll(c)
 		if err != nil {
+			if io.EOF == err {
+				log.Println("연결 종료")
+			}
 			return err
 		} else {
-			for {
-				if bytes.Contains(data, []byte("EOF")) {
-					log.Println("find EOF!")
-					log.Printf("\n%v", string(data[:n])) //값 출력
-					return nil
-				} else {
-					log.Printf("\n%v", string(data[:n])) //값 출력
+			if bytes.Contains(data, []byte("EOF")) {
+				// log.Printf("recieved %d bytes\n", n)
+				resultall = append(resultall, data[:n]...)
+				resultlen += n
 
-				}
+				log.Printf("\n%v", string(bytes.Trim(resultall[:resultlen], "EOF")))
+				log.Printf("recieved %d bytes\n", resultlen)
+				break
+			} else {
+				log.Printf("\n%v", string(resultall[:resultlen])) //값 출력
 			}
-
 		}
 	}
+
+	return nil
 }
 func sending(c net.Conn) error {
 	var com string                   //command
@@ -49,13 +55,16 @@ func sending(c net.Conn) error {
 		return sc.Err()
 	} else {
 		com = sc.Text() //읽어온 데이터를 변수에 저장
+
 		if com == "" {
 			log.Println("insert command!")
 			return ErrorNocommand
 		} else {
-			// comlen := len(com)
-			_, err := c.Write([]byte(com)) //server로 전송
+			comlen := strconv.Itoa(len(com))
+			// sizelen := make([]byte, 4)
+			// sizelen = append(sizelen, []byte(comlen)...)
 
+			_, err := c.Write([]byte(comlen + "\n" + com)) //server로 전송
 			if err != nil {
 				return err
 			}
