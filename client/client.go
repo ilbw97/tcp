@@ -56,10 +56,13 @@ func read(c net.Conn) error {
 						a := 0
 
 						for {
+							log.Println("loop started")
 							q, err := c.Read(data)
+							// log.Printf("Read q : %v\n", q)
 							if err != nil {
 								log.Printf("read q error : %v\n", err)
 							}
+							log.Printf("Read q : %v\n", q)
 							// 읽어온 만 큼 append
 
 							// log.Printf("\n%v", string(data[:q]))
@@ -67,17 +70,17 @@ func read(c net.Conn) error {
 							// a += 1
 							// log.Printf("%d번째 loop\n", a)
 							resultlen += q
-							if resultlen > totsize {
-								// return nil
+							//  else {
+							log.Printf("\n%v", string(data[:q]))
+
+							a += 1
+							log.Printf("%d번째 loop\n", a)
+							// }
+							if resultlen == totsize-4096 {
 								log.Printf("resultlen : %v == totsize : %v\n", resultlen, totsize)
 								break
-							} else {
-								log.Printf("\n%v", string(data[:q]))
-
-								a += 1
-								log.Printf("%d번째 loop\n", a)
 							}
-
+							log.Printf("NOT FINISH LOOP resultlen : %v == totsize : %v\n", resultlen, totsize)
 						}
 					} else {
 						return nil
