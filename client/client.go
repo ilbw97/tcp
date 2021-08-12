@@ -111,24 +111,10 @@ func main() {
 		if err == ErrorNotEnded {
 			continue
 		}
-
-		// if err == ErrorNoData {
-		// 	log.Println(err)
-		// 	continue
-		// }
 		if err != nil {
 			log.Println(err)
 			break
 		}
 	}
 
-	// } else {
-	// 	log.Printf("connected to %s!\n", conn.LocalAddr().String())
-	// 	for {
-	// 		sending(conn)
-	// 		read(conn)
-	// 	}
-
-	// }
-	// // defer conn.Close()
 }
