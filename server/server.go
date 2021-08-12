@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"io"
 	"log"
 	"math"
 	"net"
 	"os/exec"
+	"strconv"
 )
 
 func main() {
@@ -31,22 +33,39 @@ func main() {
 }
 
 func ConnHandler(conn net.Conn) {
-	recvCommand := make([]byte, math.MaxInt32) //값을 읽어와 저장할 버퍼 생성
-	// recvBuf := make([]byte, 4096) //값을 읽어와 저장할 버퍼 생성
+	recvData := make([]byte, math.MaxInt32) //값을 읽어와 저장할 버퍼 생성
+	var recvall []byte
+	length := 0
+
 	log.Printf("serving %s\n", conn.RemoteAddr().String())
 	defer conn.Close()
 	for {
-		n, err := conn.Read(recvCommand) //client가 값을 줄 때까지 blocking 되어 대기하다가 값을 주면 읽어들인다.
-		if nil != err {                  //입력이 종료되면 종료
+		n, err := conn.Read(recvData) //client가 값을 줄 때까지 blocking 되어 대기하다가 값을 주면 읽어들인다.
+		log.Printf("n : %d\n", n)
+
+		if nil != err { //입력이 종료되면 종료
 			if io.EOF == err {
 				log.Printf("connection is closed from client : %v\n", conn.RemoteAddr().String())
 				return
 			}
 			log.Printf("Failed to receive data : %v\n", err)
 		}
+		recvall = append(recvall, recvData[:n]...)
 
-		if n > 0 { // 받아온 길이만큼 슬라이스를 잘라서 출력
-			excommand := recvCommand[:n]
+		length += n
+
+		recvSize := recvall[:bytes.Index(recvall, []byte("\n"))]
+		size, err := strconv.Atoi(string(recvSize))
+		if err != nil {
+			return
+		}
+		log.Printf("receive command size : %d\n", size)
+
+		if length > 0 {
+			// excommand := recvData[size:n]
+			excommand := recvall[bytes.Index(recvall, []byte("\n")):length]
+			log.Printf("index : %v", bytes.Index(recvall, []byte("\n")))
+
 			result := execute(string(excommand))
 			// result = append(result, "EOF"...)
 			_, err := conn.Write(result)
@@ -57,20 +76,29 @@ func ConnHandler(conn net.Conn) {
 		}
 	}
 }
+
 func execute(command string) []byte {
 	cmd := exec.Command("bash", "-c", command)
 	// cmd := exec.Command("/bin/bash", "-c", command)
 	log.Printf("Execute Command : %v\n", cmd)
 
 	cmdres, err := cmd.Output()
+	cmdreslen := []byte(strconv.Itoa(len(string(cmdres)+"\n")) + "\n")
 	if err != nil {
 		log.Println(err)
-		return []byte("Command error : " + err.Error())
+		cmdreslen = []byte(strconv.Itoa(len("Command error : "+err.Error()+"\n")) + "\n")
+		// cmdtotlen := []byte(strconv.Itoa(len(string(cmdreslen))))
+		return append(cmdreslen, []byte("Command error : "+err.Error())...)
 	}
 	if string(cmdres) == "" {
-		return ([]byte("No output data"))
+		cmdreslen = []byte(strconv.Itoa(len("No output data"+"\n")) + "\n")
+		// cmdtotlen := []byte(strconv.Itoa(len(string(cmdreslen))))
+		return append(cmdreslen, ([]byte("No output data"))...)
 	}
 
-	log.Printf("stdout: %v bytes\n%s", len(cmdres), string(cmdres))
-	return append(cmdres, "EOF"...)
+	log.Printf("stdout: %v bytes\n%s", string(bytes.Trim(cmdreslen, "\n")), string(cmdres))
+	// return append(cmdres, "EOF"...)
+
+	return append(cmdreslen, cmdres...)
+
 }

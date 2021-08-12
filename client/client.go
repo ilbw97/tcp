@@ -17,7 +17,6 @@ var ErrorNocommand = errors.New("no command")
 var ErrorNotEnded = errors.New("")
 
 func read(c net.Conn) error {
-	// resultall := make([]byte, 0)
 	var resultall []byte
 	resultlen := 0
 	for {
@@ -29,22 +28,35 @@ func read(c net.Conn) error {
 			}
 			return err
 		} else {
-			if bytes.Contains(data, []byte("EOF")) {
-				// log.Printf("recieved %d bytes\n", n)
+			recvSize := data[:bytes.Index(data, []byte("\n"))]
+			size, err := strconv.Atoi(string(recvSize))
+			sizelen := len(strconv.Itoa(size))
+			log.Printf("sizelen : %d\n", sizelen)
+			totsize := size + sizelen
+			log.Printf("totsize : %d\n", totsize)
+			if err != nil {
+				return err
+			} else {
+				log.Printf("recieveSize : %d\n", size)
+
 				resultall = append(resultall, data[:n]...)
 				resultlen += n
+				log.Printf("resultlen : %d\n", resultlen)
+				log.Printf("n : %d\n", n)
 
-				log.Printf("\n%v", string(bytes.Trim(resultall[:resultlen], "EOF")))
-				log.Printf("recieved %d bytes\n", resultlen)
-				break
-			} else {
-				log.Printf("\n%v", string(resultall[:resultlen])) //값 출력
+				if totsize == resultlen {
+					log.Println("totsize == resultlen")
+					log.Printf("\n%v", string(resultall[:resultlen]))
+					break
+				} else {
+					log.Printf("\n%v", string(resultall[:resultlen]))
+				}
 			}
 		}
 	}
-
 	return nil
 }
+
 func sending(c net.Conn) error {
 	var com string                   //command
 	sc := bufio.NewScanner(os.Stdin) //init scanner
@@ -61,9 +73,6 @@ func sending(c net.Conn) error {
 			return ErrorNocommand
 		} else {
 			comlen := strconv.Itoa(len(com))
-			// sizelen := make([]byte, 4)
-			// sizelen = append(sizelen, []byte(comlen)...)
-
 			_, err := c.Write([]byte(comlen + "\n" + com)) //server로 전송
 			if err != nil {
 				return err
