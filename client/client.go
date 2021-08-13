@@ -17,10 +17,10 @@ var ErrorNotEnded = errors.New("")
 var ErrorNotConverttoAtoi = errors.New("")
 
 func read(c net.Conn) error {
-	var resultall []byte
-	resultlen := 0
 
 	for { //연결이 존재할 때
+		var resultall []byte
+		resultlen := 0
 		data := make([]byte, 4096)
 		recieive, err := c.Read(data) //server로부터 data 읽어오면
 		if err != nil {
