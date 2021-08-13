@@ -17,21 +17,22 @@ var ErrorNotEnded = errors.New("")
 var ErrorNotConverttoAtoi = errors.New("")
 
 func read(c net.Conn) error {
-	// var resultall []byte
+	var resultall []byte
 	resultlen := 0
 
 	for { //연결이 존재할 때
 		data := make([]byte, 4096)
-		n, err := c.Read(data) //server로부터 data 읽어오면
+		recieive, err := c.Read(data) //server로부터 data 읽어오면
 		if err != nil {
 			if io.EOF == err {
 				log.Println("연결 종료")
 			}
 			return err
 		} else { //data를 읽어올 때 error 없을 경우
-			if n > 0 {
+			if recieive > 0 {
 				recvSize := data[:bytes.Index(data, []byte("\n"))] //data 첫부분에서 보낸 size check
 				size, err := strconv.Atoi(string(recvSize))        //int로 converting
+
 				log.Printf("receive size : %d\n", size)
 
 				sizelen := len(strconv.Itoa(size))
@@ -43,58 +44,59 @@ func read(c net.Conn) error {
 					log.Println(err)
 
 				} else {
-					ns := bytes.Index(data, []byte("\n")) + 1
-					log.Printf("ns : %d\n", ns)
+					sizeindex := bytes.Index(data, []byte("\n")) + 1
+					log.Printf("sizeindex : %d\n", sizeindex)
 
-					log.Printf("n - ns : %d\n", n-ns)
-					// resultlen += (n - ns)
-					log.Printf("resultlen : %v\n", resultlen)
+					log.Printf("receive - sizeindex : %d\n", recieive-sizeindex)
 
-					log.Printf("\n%v", string(data[ns:n]))
+					// log.Printf("resultlen : %v\n", resultlen)
+
+					// ORIGIN
+					// log.Printf("\n%v", string(data[sizeindex:recieive]))
+					resultall = append(resultall, data[sizeindex:recieive]...)
+					resultlen += recieive
+					// log.Printf("\n%v", string(resultall[:recieive-sizeindex]))
 
 					if totsize > len(data) {
 						a := 0
-
 						for {
 							log.Println("loop started")
-							q, err := c.Read(data)
-							// log.Printf("Read q : %v\n", q)
+							LargeReceive, err := c.Read(data)
+
 							if err != nil {
-								log.Printf("read q error : %v\n", err)
+								log.Printf("read LargeReceive error : %v\n", err)
 							}
-							log.Printf("Read q : %v\n", q)
-							// 읽어온 만 큼 append
+							log.Printf("Read LargeReceive : %v\n", LargeReceive)
 
-							// log.Printf("\n%v", string(data[:q]))
-
-							// a += 1
-							// log.Printf("%d번째 loop\n", a)
-							resultlen += q
-							//  else {
-							log.Printf("\n%v", string(data[:q]))
+							resultlen += LargeReceive
+							// ORIGIN
+							// log.Printf("\n%v", string(data[:LargeReceive]))
+							resultall = append(resultall, data[:LargeReceive]...)
+							// log.Printf("\n%v", string(resultall[:resultlen]))
 
 							a += 1
 							log.Printf("%d번째 loop\n", a)
-							// }
-							if resultlen == totsize-4096 {
+							if resultlen == totsize {
+								log.Printf("\n%v", string(resultall[:resultlen]))
 								log.Printf("resultlen : %v == totsize : %v\n", resultlen, totsize)
 								break
 							}
 							log.Printf("NOT FINISH LOOP resultlen : %v == totsize : %v\n", resultlen, totsize)
 						}
 					} else {
+						log.Printf("\n%v", string(resultall[:recieive-sizeindex]))
+
 						return nil
 					}
 					return nil
 				}
+			} else {
+				log.Println("No receive data")
+				return nil
 			}
 		}
 	}
 }
-
-// return nil
-// }
-// }
 
 func sending(c net.Conn) error {
 	var com string                   //command
